@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { PrismaClient } from "../generated/client/client.js";
 import { Difficulty } from "../generated/client/enums.js";
 
 const LEETCODE_GRAPHQL_URL = "https://leetcode.com/graphql";
@@ -52,7 +53,11 @@ const QUESTION_QUERY = `
   }
 `;
 
-async function resolveTitleSlug(problemId: number): Promise<string> {
+const SLUG_SYNC_BATCH_SIZE = 1000;
+
+let slugCatalogSyncInFlight: Promise<void> | null = null;
+
+async function fetchProblemCatalog() {
   const response = await fetch(LEETCODE_PROBLEMS_ALL_URL, {
     headers: DEFAULT_HEADERS,
   });
@@ -62,17 +67,61 @@ async function resolveTitleSlug(problemId: number): Promise<string> {
   }
 
   const json: unknown = await response.json();
-  const catalog = ProblemCatalogSchema.parse(json);
+  return ProblemCatalogSchema.parse(json);
+}
 
-  const match = catalog.stat_status_pairs.find(
-    (entry) => entry.stat.frontend_question_id === problemId
-  );
+async function syncProblemSlugCatalog(prisma: PrismaClient): Promise<void> {
+  const catalog = await fetchProblemCatalog();
+  const syncedAt = new Date();
 
-  if (!match) {
+  const entries = catalog.stat_status_pairs.map((entry) => ({
+    id: entry.stat.frontend_question_id,
+    titleSlug: entry.stat.question__title_slug,
+    syncedAt,
+  }));
+
+  for (let i = 0; i < entries.length; i += SLUG_SYNC_BATCH_SIZE) {
+    const batch = entries.slice(i, i + SLUG_SYNC_BATCH_SIZE);
+    await prisma.leetCodeProblemSlug.createMany({
+      data: batch,
+      skipDuplicates: true,
+    });
+  }
+}
+
+async function ensureProblemSlugCatalog(prisma: PrismaClient): Promise<void> {
+  if (!slugCatalogSyncInFlight) {
+    slugCatalogSyncInFlight = syncProblemSlugCatalog(prisma).finally(() => {
+      slugCatalogSyncInFlight = null;
+    });
+  }
+
+  await slugCatalogSyncInFlight;
+}
+
+async function resolveTitleSlug(
+  problemId: number,
+  prisma: PrismaClient
+): Promise<string> {
+  const cached = await prisma.leetCodeProblemSlug.findUnique({
+    where: { id: problemId },
+  });
+
+  if (cached) {
+    return cached.titleSlug;
+  }
+
+  await ensureProblemSlugCatalog(prisma);
+
+  const synced = await prisma.leetCodeProblemSlug.findUnique({
+    where: { id: problemId },
+  });
+
+  if (!synced) {
     throw new Error(`No LeetCode problem found for id ${problemId}`);
   }
 
-  return match.stat.question__title_slug;
+  return synced.titleSlug;
 }
 
 async function fetchQuestionBySlug(titleSlug: string) {
@@ -134,9 +183,10 @@ function parseConstraints(content: string): string[] {
 }
 
 export async function fetchLeetCodeProblem(
-  problemId: number
+  problemId: number,
+  prisma: PrismaClient
 ): Promise<LeetCodeProblemData> {
-  const titleSlug = await resolveTitleSlug(problemId);
+  const titleSlug = await resolveTitleSlug(problemId, prisma);
   const question = await fetchQuestionBySlug(titleSlug);
 
   if (Number(question.questionFrontendId) !== problemId) {

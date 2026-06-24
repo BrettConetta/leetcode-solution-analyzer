@@ -50,6 +50,12 @@ model LeetCodeProblem {
   submissions      Submission[]
 }
 
+model LeetCodeProblemSlug {
+  id        Int      @id // LeetCode frontend question id (e.g., 1, 20)
+  titleSlug String
+  syncedAt  DateTime @default(now()) @updatedAt
+}
+
 model Submission {
   id           String          @id @default(uuid())
   userId       String
