@@ -1,0 +1,75 @@
+datasource db {
+  provider  = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/client"
+}
+
+enum Difficulty {
+  Easy
+  Medium
+  Hard
+}
+
+enum CodeLanguage {
+  python
+  python3
+  java
+  javascript
+  typescript
+  cpp
+  c
+  csharp
+  dart
+  elixir
+  erlang
+  golang
+  kotlin
+  swift
+  rust
+  ruby
+  racket
+  scala
+  php
+}
+
+model User {
+  id          String       @id // Stores the anonymous UUID from LocalStorage
+  createdAt   DateTime     @default(now())
+  submissions Submission[]
+}
+
+model LeetCodeProblem {
+  id               Int          @id // LeetCode's question number (e.g., 1, 20)
+  title            String
+  difficulty       Difficulty
+  problemStatement String       @db.Text
+  constraints      String[]
+  submissions      Submission[]
+}
+
+model Submission {
+  id           String          @id @default(uuid())
+  userId       String
+  problemId    Int             
+  codeLanguage CodeLanguage
+  userCode     String          @db.Text
+  createdAt    DateTime        @default(now())
+  
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem      LeetCodeProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  analysis     Analysis?
+}
+
+model Analysis {
+  id           String     @id @default(uuid())
+  submissionId String     @unique
+  analysisData Json       // Native JSONB for compressed, flexible AI feedback
+  createdAt    DateTime   @default(now())
+
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@map("AIAnalysis")
+}
