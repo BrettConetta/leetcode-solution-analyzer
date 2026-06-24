@@ -67,7 +67,7 @@ app.post("/api/submissions", async (req: Request, res: Response): Promise<any> =
     // Cache Miss: Fetch from LeetCode GraphQL gateway and store natively in Supabase
     if (!problem) {
       try {
-        const externalData = await fetchLeetCodeProblem(problemId);
+        const externalData = await fetchLeetCodeProblem(problemId, prisma);
         problem = await prisma.leetCodeProblem.create({
           data: {
             id: problemId,
@@ -78,6 +78,7 @@ app.post("/api/submissions", async (req: Request, res: Response): Promise<any> =
           },
         });
       } catch (err) {
+        console.error(`Failed to scrape LeetCode problem #${problemId}:`, err);
         return res.status(404).json({ error: `Could not resolve or scrape LeetCode problem #${problemId}` });
       }
     }
