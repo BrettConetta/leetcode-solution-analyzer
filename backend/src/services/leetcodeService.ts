@@ -158,7 +158,7 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&#39;/g, "'");
 }
 
-function stripHtml(html: string): string {
+export function stripHtml(html: string): string {
   return decodeHtmlEntities(
     html
       .replace(/<sup>(.*?)<\/sup>/gi, "^$1")

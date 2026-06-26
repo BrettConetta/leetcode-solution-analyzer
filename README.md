@@ -1,10 +1,10 @@
 # leetcode-solution-analyzer
 
-A full-stack TypeScript app that analyzes LeetCode solution submissions with AI feedback on time/space complexity, logic flaws, and overall quality.
+A full-stack TypeScript app that analyzes LeetCode solution submissions with AI feedback on time/space complexity, logic flaws, improvements, and overall quality.
 
 ## Status
 
-The backend is functional end-to-end for submission intake, LeetCode problem resolution, and cached analysis storage. The frontend is scaffolded but not yet wired to the API. AI analysis is currently mocked; Claude SDK integration is the next step.
+The backend is functional end-to-end for submission intake, LeetCode problem resolution, Claude-powered analysis, and cached analysis storage. The frontend is scaffolded but not yet wired to the API.
 
 ## Structure
 
@@ -37,7 +37,7 @@ The submission pipeline:
 2. Upserts an anonymous `User` record (UUID-based, no auth yet)
 3. Resolves LeetCode problem metadata via a read-through cache
 4. Returns a cached analysis if the same user has already submitted identical code for that problem
-5. Otherwise persists the submission and stores analysis results in a JSONB column
+5. Otherwise calls Claude via `analysisService`, then persists the submission and analysis atomically in a JSONB column
 
 ### Database (Prisma + PostgreSQL)
 
@@ -60,9 +60,28 @@ Supported languages: `python`, `python3`, `java`, `javascript`, `typescript`, `c
 3. Fetches full question details (title, difficulty, HTML content) via LeetCode's GraphQL API
 4. Parses constraints from the problem HTML and stores everything locally
 
-### Analysis (mocked)
+### AI analysis
 
-New submissions currently receive a hardcoded mock analysis (time/space complexity comparison, logic flaws, score). The endpoint and persistence layer are ready for a real LLM integration.
+`backend/src/services/analysisService.ts` sends the problem statement and submission to Claude (Anthropic SDK), validates the response with `backend/src/schemas/analysisSchema.ts`, and retries once if JSON parsing fails.
+
+Analysis response shape (`data` field):
+
+```json
+{
+  "timeComplexity": { "actual": "O(n^2)", "optimal": "O(n)", "isOptimal": false },
+  "spaceComplexity": { "actual": "O(1)", "optimal": "O(1)", "isOptimal": true },
+  "logicFlaws": [],
+  "improvements": ["Replace the nested loop with a hash map to reduce time from O(n^2) to O(n)."],
+  "score": 55
+}
+```
+
+| Field | Description |
+| ----- | ----------- |
+| `timeComplexity` / `spaceComplexity` | `actual` and `optimal` Big-O values, plus `isOptimal` |
+| `logicFlaws` | Correctness issues (bugs, wrong logic, missed edge cases); empty if none |
+| `improvements` | Actionable efficiency or clarity suggestions; empty when already optimal |
+| `score` | Overall quality from 0–100 |
 
 ## Development
 
@@ -78,6 +97,8 @@ Create `backend/.env`:
 ```env
 DATABASE_POOLED_URL=postgresql://...   # Used by the Express app at runtime
 DATABASE_DIRECT_URL=postgresql://...   # Used by Prisma CLI for migrations
+ANTHROPIC_API_KEY=sk-ant-...           # Required for AI analysis
+ANTHROPIC_MODEL=claude-sonnet-4-6      # Optional; defaults to claude-sonnet-4-6
 PORT=3001                              # Optional; defaults to 3001
 ```
 
@@ -114,5 +135,5 @@ curl -X POST http://localhost:3001/api/submissions \
 ## Planned next steps
 
 - Wire up the React frontend (problem picker, code editor, results display)
-- Replace mock analysis with Claude SDK (prompt caching for cost reduction)
+- Prompt caching for analysis cost reduction
 - LeetCode failsafe if external problem fetching becomes unavailable

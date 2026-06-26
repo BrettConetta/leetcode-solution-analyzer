@@ -7,6 +7,7 @@ import { PrismaClient } from "./generated/client/client.js";
 import { CodeLanguage } from "./generated/client/enums.js";
 import { z } from "zod";
 import { fetchLeetCodeProblem } from "./services/leetcodeService.js";
+import { analyzeSubmission } from "./services/analysisService.js";
 
 dotenv.config();
 
@@ -95,31 +96,29 @@ app.post("/api/submissions", async (req: Request, res: Response): Promise<any> =
         data: existingSubmission.analysis.analysisData,
       });
     }
-
-    // Persist new code submission instance to relation table
-    const newSubmission = await prisma.submission.create({
-      data: {
-        userId,
-        problemId: problem.id,
-        codeLanguage,
-        userCode,
-      },
+    
+    const analysisResult = await analyzeSubmission({
+      problem,
+      userCode,
+      codeLanguage,
     });
+    
+    const savedAnalysis = await prisma.$transaction(async (tx) => {
+      const newSubmission = await tx.submission.create({
+        data: {
+          userId,
+          problemId: problem.id,
+          codeLanguage,
+          userCode,
+        },
+      });
 
-    // Temporarily Mocked Analysis Payload (We will plug Claude SDK here next)
-    const mockAnalysis = {
-      timeComplexity: { actual: "O(N^2)", optimal: "O(N)", isOptimal: false },
-      spaceComplexity: { actual: "O(1)", optimal: "O(N)", isOptimal: true },
-      logicFlaws: ["Nested execution loops trigger timeout exceptions under large boundary bounds."],
-      score: 74,
-    };
-
-    // Commit data natively inside JSONB column structure
-    const savedAnalysis = await prisma.analysis.create({
-      data: {
-        submissionId: newSubmission.id,
-        analysisData: mockAnalysis,
-      },
+      return tx.analysis.create({
+        data: {
+          submissionId: newSubmission.id,
+          analysisData: analysisResult,
+        },
+      });
     });
 
     return res.status(201).json({
