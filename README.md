@@ -62,7 +62,7 @@ Supported languages: `python`, `python3`, `java`, `javascript`, `typescript`, `c
 
 ### AI analysis
 
-`backend/src/services/analysisService.ts` sends the problem statement and submission to Claude (Anthropic SDK), validates the response with `backend/src/schemas/analysisSchema.ts`, and retries once if JSON parsing fails.
+`backend/src/services/analysisService.ts` sends the problem statement and submission to Claude (Anthropic SDK), validates the response with `shared/src/schemas/analysis.ts`, and retries once if JSON parsing fails.
 
 Analysis response shape (`data` field):
 
