@@ -1,15 +1,16 @@
 {
-  "name": "frontend",
+  "name": "leetcode-solution-analyzer-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run build -w @leetcode-solution-analyzer/shared && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@leetcode-solution-analyzer/shared": "*",
     "@tailwindcss/vite": "^4.3.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
