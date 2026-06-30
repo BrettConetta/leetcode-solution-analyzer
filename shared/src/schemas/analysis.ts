@@ -14,5 +14,11 @@ export const AnalysisResultSchema = z.object({
   score: z.number().int().min(0).max(100),
 });
 
+export const SubmissionSuccessResponseSchema = z.object({
+  message: z.string(),
+  data: AnalysisResultSchema,
+});
+
 export type ComplexityAnalysis = z.infer<typeof ComplexityAnalysisSchema>;
 export type AnalysisResult = z.infer<typeof AnalysisResultSchema>;
+export type SubmissionSuccessResponse = z.infer<typeof SubmissionSuccessResponseSchema>;
