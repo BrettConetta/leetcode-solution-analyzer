@@ -1,16 +1,21 @@
 {
-    "name": "leetcode-solution-analyzer",
-    "private": true,
-    "workspaces": [
-      "frontend",
-      "backend",
-      "shared"
-    ],
-    "scripts": {
-        "build:shared": "npm run build -w @leetcode-solution-analyzer/shared",
-        "build:backend": "npm run build -w leetcode-solution-analyzer-backend",
-        "build:frontend": "npm run build -w leetcode-solution-analyzer-frontend",
-        "build": "npm run build:shared && npm run build:backend && npm run build:frontend",
-        "postinstall": "npm run build:shared"
-    }
+  "name": "leetcode-solution-analyzer",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "shared"
+  ],
+  "scripts": {
+    "build:shared": "npm run build -w @leetcode-solution-analyzer/shared",
+    "build:backend": "npm run build -w leetcode-solution-analyzer-backend",
+    "build:frontend": "npm run build -w leetcode-solution-analyzer-frontend",
+    "build": "npm run build:shared && npm run build:backend && npm run build:frontend",
+    "postinstall": "npm run build:shared",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.9.4"
   }
+}

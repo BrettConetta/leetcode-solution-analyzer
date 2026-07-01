@@ -1,25 +1,25 @@
 {
-    "name": "@leetcode-solution-analyzer/shared",
-    "version": "0.0.0",
-    "private": true,
-    "type": "module",
-    "scripts": {
-      "build": "tsc"
+  "name": "@leetcode-solution-analyzer/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc"
+  },
+  "exports": {
+    "./schemas/analysis": {
+      "types": "./dist/schemas/analysis.d.ts",
+      "import": "./dist/schemas/analysis.js"
     },
-    "exports": {
-        "./schemas/analysis": {
-            "types": "./dist/schemas/analysis.d.ts",
-            "import": "./dist/schemas/analysis.js"
-        },
-        "./constants/codeLanguages": {
-            "types": "./dist/constants/codeLanguages.d.ts",
-            "import": "./dist/constants/codeLanguages.js"
-        }
-    },
-    "devDependencies": {
-      "typescript": "^6.0.3"
-    },
-    "dependencies": {
-      "zod": "^4.4.3"
+    "./constants/codeLanguages": {
+      "types": "./dist/constants/codeLanguages.d.ts",
+      "import": "./dist/constants/codeLanguages.js"
     }
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
   }
+}

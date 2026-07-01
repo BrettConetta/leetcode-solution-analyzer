@@ -13,5 +13,3 @@ export default defineConfig({
     url: env("DATABASE_DIRECT_URL"),
   },
 });
-
-
