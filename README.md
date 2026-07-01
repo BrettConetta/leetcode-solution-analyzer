@@ -21,7 +21,7 @@ Submit a problem ID, language, and solution in the UI (or via the API); the back
 - **Submission form** — LeetCode problem ID, language selector (all supported backend languages), and a resizable code textarea with client-side validation
 - **API integration** — `POST /api/submissions` via `frontend/src/api/submissions.ts`, with response validation against shared Zod schemas
 - **Anonymous sessions** — Client-generated UUID stored in `localStorage` (`leetcode-analyzer-user-id`) and sent as `userId` on each submission
-- **Results display** — Score summary, logic flaws, time/space complexity (actual vs optimal), and improvement suggestions; loading skeleton while analysis runs; cached-result indicator when the backend returns a prior analysis
+- **Results display** — Score summary, logic flaws, time/space complexity (actual vs problem-level optimal, with optimality status), and improvement suggestions; loading skeleton while analysis runs; cached-result indicator when the backend returns a prior analysis
 - **Error handling** — Form validation errors and API failure messages surfaced in the UI
 
 The dev server runs at `http://localhost:5173` (Vite default) and calls the backend at `http://localhost:3001`.
@@ -91,10 +91,34 @@ Analysis response shape (`data` field):
 
 | Field | Description |
 | ----- | ----------- |
-| `timeComplexity` / `spaceComplexity` | `actual` and `optimal` Big-O values, plus `isOptimal` |
+| `timeComplexity` / `spaceComplexity` | Each has `actual` (the submission), `optimal` (problem-level best), and `isOptimal` (whether the submission meets the optimality rules below) |
 | `logicFlaws` | Correctness issues (bugs, wrong logic, missed edge cases); empty if none |
-| `improvements` | Actionable efficiency or clarity suggestions; empty when already optimal |
-| `score` | Overall quality from 0–100 |
+| `improvements` | Efficiency or clarity suggestions tied to non-optimal time or space; empty when both `isOptimal` flags are true |
+| `score` | Overall quality from 0–100 (correctness weighted heavily) |
+
+#### Complexity semantics
+
+`optimal` values describe the **problem**, not the submission. They are the same for every submission to a given problem:
+
+- **`timeComplexity.optimal`** — best achievable time across all correct approaches (may require more auxiliary space).
+- **`spaceComplexity.optimal`** — best achievable auxiliary space across all correct approaches (may require worse time).
+
+`isOptimal` describes whether the **submission** is good enough on each axis:
+
+- **`timeComplexity.isOptimal`** — strict. `true` only when `actual` is asymptotically ≤ `timeComplexity.optimal`. No time–space tradeoff exceptions.
+- **`spaceComplexity.isOptimal`** — `true` when either:
+  1. `actual` ≤ `spaceComplexity.optimal` (globally minimum auxiliary space), or
+  2. `timeComplexity.isOptimal` is `true` and `actual` is the minimum auxiliary space among all correct solutions at optimal time (e.g. Two Sum hash map: `O(n)` space is optimal among `O(n)`-time approaches even though global minimum space is `O(1)`).
+
+  `false` when the submission uses more auxiliary space than another correct solution at the same optimal time (e.g. `O(n)` space when `O(log n)` space is achievable at the same `O(n)` time).
+
+Auxiliary space excludes required output (e.g. the result linked list) unless the solution allocates extra structures beyond the answer.
+
+#### Scoring and improvements
+
+- Scores **90–100** are reserved for correct solutions with no `logicFlaws` where **both** `timeComplexity.isOptimal` and `spaceComplexity.isOptimal` are `true`. A time-optimal solution can score in this range even when `spaceComplexity.actual` exceeds `spaceComplexity.optimal`, as long as it uses minimum space among all time-optimal approaches.
+- A correct but time-suboptimal solution (e.g. nested-loop Two Sum) may score lower despite having no logic flaws.
+- `improvements` prioritizes time over space. Space suggestions appear only when time is already optimal but space is not optimal among time-optimal approaches.
 
 ## Development
 
