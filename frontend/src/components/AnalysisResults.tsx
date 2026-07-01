@@ -4,17 +4,16 @@ import { FeedbackSection } from "./FeedbackSection";
 import { ComplexitySection } from "./ComplexitySection";
 type AnalysisResultsProps = {
     results: AnalysisResult;
-    message?: string;
+    isRepeatSubmission?: boolean;
     isStale?: boolean;
 };
-export function AnalysisResults({ results, message = "", isStale = false }: AnalysisResultsProps) {
-    const isCached = message.toLowerCase().includes("cache");
+export function AnalysisResults({ results, isRepeatSubmission = false, isStale = false }: AnalysisResultsProps) {
     return (
       <div className="relative overflow-hidden rounded-md border-2 border-zinc-700 bg-zinc-800/50 p-6">
         <div className="space-y-6">
           <div className="space-y-1">
             <h2 className="text-xl font-semibold text-zinc-200">Analysis Results</h2>
-            {isCached && <p className="text-sm text-zinc-500">Cached result</p>}
+            {isRepeatSubmission && <p className="text-sm text-zinc-500">Cached result</p>}
           </div>
           <ScoreSummary score={results.score} />
           <FeedbackSection feedback={results.logicFlaws} title="Logic Flaws" includeColoredText emptyMessage="No logic flaws found" />

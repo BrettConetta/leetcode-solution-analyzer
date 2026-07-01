@@ -84,16 +84,20 @@ app.post("/api/submissions", async (req: Request, res: Response): Promise<any> =
       }
     }
 
-    // Prevent Redundant AI Spending: Return cached analysis if identical code has been checked
-    const existingSubmission = await prisma.submission.findFirst({
-      where: { userId, problemId, userCode },
+    const priorUserSubmission = await prisma.submission.findFirst({
+      where: { userId, problemId, codeLanguage, userCode },
+    });
+
+    const cachedSubmission = await prisma.submission.findFirst({
+      where: { problemId, codeLanguage, userCode },
       include: { analysis: true },
     });
 
-    if (existingSubmission && existingSubmission.analysis) {
+    if (cachedSubmission?.analysis) {
       return res.json({
-        message: "Retrieved analysis from local database storage cache",
-        data: existingSubmission.analysis.analysisData,
+        message: "Analysis processed successfully",
+        data: cachedSubmission.analysis.analysisData,
+        isRepeatSubmission: priorUserSubmission !== null,
       });
     }
     
@@ -124,6 +128,7 @@ app.post("/api/submissions", async (req: Request, res: Response): Promise<any> =
     return res.status(201).json({
       message: "Analysis processed successfully",
       data: savedAnalysis.analysisData,
+      isRepeatSubmission: false,
     });
 
   } catch (error) {

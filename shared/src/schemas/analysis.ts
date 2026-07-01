@@ -17,6 +17,7 @@ export const AnalysisResultSchema = z.object({
 export const SubmissionSuccessResponseSchema = z.object({
   message: z.string(),
   data: AnalysisResultSchema,
+  isRepeatSubmission: z.boolean(),
 });
 
 export type ComplexityAnalysis = z.infer<typeof ComplexityAnalysisSchema>;

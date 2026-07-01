@@ -88,13 +88,18 @@ export interface AnalyzeSubmissionInput {
      - logic flaws
      - improvements
      - overall quality
+
+    Complexity tradeoffs (apply to both timeComplexity.optimal and spaceComplexity.optimal):
+     - timeComplexity.optimal = best achievable time across all correct approaches (may require more space).
+     - spaceComplexity.optimal = best achievable auxiliary space across all correct approaches (may require worse time).
+     - These are independent: do not set spaceComplexity.optimal to the space used by the time-optimal approach unless that approach also uses the minimum possible auxiliary space.
     
     Respond only with a valid JSON object. Do not include markdown, code fences, or any text outside the JSON.
     The JSON must have exactly the following keys:
     timeComplexity (object)
      - actual (string): Big-O time complexity of the submitted solution (e.g. "O(n)", "O(n^2)").
-     - optimal (string): Big-O of the best reasonable time complexity for this problem. When a time–space tradeoff exists, use the best achievable time even if that requires more space (e.g. Two Sum O(n) time with a hash map).
-     - isOptimal (boolean): true if actual is asymptotically as good as or better than optimal (same or lower Big-O order). false only when actual is worse than optimal.
+     - optimal (string): Big-O of the minimum auxiliary space among all correct solutions for this problem, regardless of time. When a time–space tradeoff exists, use that minimum even if it requires worse time (e.g. Two Sum: optimal space is O(1) via nested loops, not O(n) from the hash-map approach). WRONG: setting optimal to O(n) because the submitted or time-optimal solution uses a hash map.
+     - isOptimal (boolean): true if actual ≤ optimal (same or lower Big-O order), OR if actual is the minimum space achievable without worsening the submission's own time complexity (time–space tradeoff: e.g. O(n) time + O(n) space when global minimum space is O(1)). false only when actual uses more auxiliary space than both optimal and the minimum for the submission's time class.
     spaceComplexity (object)
      - actual (string): Big-O space complexity of the submitted solution (e.g. "O(n)", "O(n^2)").
      - optimal (string): Big-O of the best reasonable auxiliary space among correct solutions. When a time–space tradeoff exists, use the best achievable space even if that approach has worse time (e.g. Two Sum can use O(1) space with O(n²) time). Do not set this to the space cost of the time-optimal approach unless that is also the best possible space.
@@ -116,6 +121,14 @@ export interface AnalyzeSubmissionInput {
     Reflect correctness in logicFlaws and score; do not add extra keys.
     
     Example outputs (values are illustrative):
+
+    FORBIDDEN (Two Sum hash map — do not return this.) Wrong because spaceComplexity.optimal is O(n) (the hash map's auxiliary space); the global minimum is O(1) via nested loops:
+    {
+        "timeComplexity": { "actual": "O(n)", "optimal": "O(n)", "isOptimal": true },
+        "spaceComplexity": { "actual": "O(n)", "optimal": "O(n)", "isOptimal": true }
+    }
+
+    Correct Examples:
     Example A:
     {
         "timeComplexity": { "actual": "O(n^2)", "optimal": "O(n)", "isOptimal": false },
@@ -134,7 +147,7 @@ export interface AnalyzeSubmissionInput {
         "score": 100
     }
     
-    Return exactly one JSON object matching the schema above (like Example A or Example B), not an array and not both examples.
+    Before returning, verify: spaceComplexity.optimal is the global minimum auxiliary space for the problem, not the space of the time-optimal or submitted approach. Return exactly one JSON object matching the schema above (like Example A or Example B), not an array and not both examples.
     `
   }
 

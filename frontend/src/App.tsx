@@ -67,7 +67,7 @@ type LastResults = SubmissionSuccessResponse;
             {lastResults && (
               <AnalysisResults
                 results={lastResults.data}
-                message={lastResults.message}
+                isRepeatSubmission={lastResults.isRepeatSubmission}
                 isStale={isSubmitting}
               />
             )}
