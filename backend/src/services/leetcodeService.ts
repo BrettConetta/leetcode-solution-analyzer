@@ -7,8 +7,7 @@ const LEETCODE_PROBLEMS_ALL_URL = "https://leetcode.com/api/problems/all/";
 
 const DEFAULT_HEADERS = {
   "Content-Type": "application/json",
-  "User-Agent":
-    "Mozilla/5.0 (compatible; LeetCodeSolutionAnalyzer/1.0)",
+  "User-Agent": "Mozilla/5.0 (compatible; LeetCodeSolutionAnalyzer/1.0)",
 };
 
 const ProblemCatalogSchema = z.object({
@@ -63,7 +62,9 @@ async function fetchProblemCatalog() {
   });
 
   if (!response.ok) {
-    throw new Error(`LeetCode catalog request failed with status ${response.status}`);
+    throw new Error(
+      `LeetCode catalog request failed with status ${response.status}`
+    );
   }
 
   const json: unknown = await response.json();
@@ -136,7 +137,9 @@ async function fetchQuestionBySlug(titleSlug: string) {
   });
 
   if (!response.ok) {
-    throw new Error(`LeetCode GraphQL request failed with status ${response.status}`);
+    throw new Error(
+      `LeetCode GraphQL request failed with status ${response.status}`
+    );
   }
 
   const json: unknown = await response.json();

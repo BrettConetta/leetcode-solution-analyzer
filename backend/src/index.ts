@@ -12,8 +12,8 @@ import { analyzeSubmission } from "./services/analysisService.js";
 dotenv.config();
 
 // Create a raw PostgreSQL database pool using DATABASE_POOLED_URL from .env
-const pool = new pg.Pool({ 
-  connectionString: process.env.DATABASE_POOLED_URL 
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_POOLED_URL,
 });
 
 // Instantiate the explicit driver adapter layer
@@ -43,99 +43,110 @@ app.get("/api/health", (_req: Request, res: Response) => {
 });
 
 // Core Submission & Analysis Processing Route
-app.post("/api/submissions", async (req: Request, res: Response): Promise<any> => {
-  try {
-    // Validate incoming payload parameters
-    const validation = SubmissionSchema.safeParse(req.body);
-    if (!validation.success) {
-      return res.status(400).json({ error: validation.error.format() });
-    }
+app.post(
+  "/api/submissions",
+  async (req: Request, res: Response): Promise<any> => {
+    try {
+      // Validate incoming payload parameters
+      const validation = SubmissionSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: validation.error.format() });
+      }
 
-    const { userId, problemId, codeLanguage, userCode } = validation.data;
+      const { userId, problemId, codeLanguage, userCode } = validation.data;
 
-    // Anonymous User Session Auto-Upsert
-    await prisma.user.upsert({
-      where: { id: userId },
-      update: {},
-      create: { id: userId },
-    });
+      // Anonymous User Session Auto-Upsert
+      await prisma.user.upsert({
+        where: { id: userId },
+        update: {},
+        create: { id: userId },
+      });
 
-    // Read-Through Cache: Check if LeetCode problem metadata exists locally
-    let problem = await prisma.leetCodeProblem.findUnique({
-      where: { id: problemId },
-    });
+      // Read-Through Cache: Check if LeetCode problem metadata exists locally
+      let problem = await prisma.leetCodeProblem.findUnique({
+        where: { id: problemId },
+      });
 
-    // Cache Miss: Fetch from LeetCode GraphQL gateway and store natively in Supabase
-    if (!problem) {
-      try {
-        const externalData = await fetchLeetCodeProblem(problemId, prisma);
-        problem = await prisma.leetCodeProblem.create({
+      // Cache Miss: Fetch from LeetCode GraphQL gateway and store natively in Supabase
+      if (!problem) {
+        try {
+          const externalData = await fetchLeetCodeProblem(problemId, prisma);
+          problem = await prisma.leetCodeProblem.create({
+            data: {
+              id: problemId,
+              title: externalData.title,
+              difficulty: externalData.difficulty,
+              problemStatement: externalData.problemStatement,
+              constraints: externalData.constraints,
+            },
+          });
+        } catch (err) {
+          console.error(
+            `Failed to scrape LeetCode problem #${problemId}:`,
+            err
+          );
+          return res
+            .status(404)
+            .json({
+              error: `Could not resolve or scrape LeetCode problem #${problemId}`,
+            });
+        }
+      }
+
+      const priorUserSubmission = await prisma.submission.findFirst({
+        where: { userId, problemId, codeLanguage, userCode },
+      });
+
+      const cachedSubmission = await prisma.submission.findFirst({
+        where: { problemId, codeLanguage, userCode },
+        include: { analysis: true },
+      });
+
+      if (cachedSubmission?.analysis) {
+        return res.json({
+          message: "Analysis processed successfully",
+          data: cachedSubmission.analysis.analysisData,
+          isRepeatSubmission: priorUserSubmission !== null,
+        });
+      }
+
+      const analysisResult = await analyzeSubmission({
+        problem,
+        userCode,
+        codeLanguage,
+      });
+
+      const savedAnalysis = await prisma.$transaction(async (tx) => {
+        const newSubmission = await tx.submission.create({
           data: {
-            id: problemId,
-            title: externalData.title,
-            difficulty: externalData.difficulty,
-            problemStatement: externalData.problemStatement,
-            constraints: externalData.constraints,
+            userId,
+            problemId: problem.id,
+            codeLanguage,
+            userCode,
           },
         });
-      } catch (err) {
-        console.error(`Failed to scrape LeetCode problem #${problemId}:`, err);
-        return res.status(404).json({ error: `Could not resolve or scrape LeetCode problem #${problemId}` });
-      }
-    }
 
-    const priorUserSubmission = await prisma.submission.findFirst({
-      where: { userId, problemId, codeLanguage, userCode },
-    });
+        return tx.analysis.create({
+          data: {
+            submissionId: newSubmission.id,
+            analysisData: analysisResult,
+          },
+        });
+      });
 
-    const cachedSubmission = await prisma.submission.findFirst({
-      where: { problemId, codeLanguage, userCode },
-      include: { analysis: true },
-    });
-
-    if (cachedSubmission?.analysis) {
-      return res.json({
+      return res.status(201).json({
         message: "Analysis processed successfully",
-        data: cachedSubmission.analysis.analysisData,
-        isRepeatSubmission: priorUserSubmission !== null,
+        data: savedAnalysis.analysisData,
+        isRepeatSubmission: false,
       });
+    } catch (error) {
+      console.error("Critical System Pipeline Error:", error);
+      return res
+        .status(500)
+        .json({ error: "Internal server architecture breakdown" });
     }
-    
-    const analysisResult = await analyzeSubmission({
-      problem,
-      userCode,
-      codeLanguage,
-    });
-    
-    const savedAnalysis = await prisma.$transaction(async (tx) => {
-      const newSubmission = await tx.submission.create({
-        data: {
-          userId,
-          problemId: problem.id,
-          codeLanguage,
-          userCode,
-        },
-      });
-
-      return tx.analysis.create({
-        data: {
-          submissionId: newSubmission.id,
-          analysisData: analysisResult,
-        },
-      });
-    });
-
-    return res.status(201).json({
-      message: "Analysis processed successfully",
-      data: savedAnalysis.analysisData,
-      isRepeatSubmission: false,
-    });
-
-  } catch (error) {
-    console.error("Critical System Pipeline Error:", error);
-    return res.status(500).json({ error: "Internal server architecture breakdown" });
   }
-});
+);
 
 app.listen(PORT, () => {
   console.log(`🚀 Backend running smoothly on http://localhost:${PORT}`);

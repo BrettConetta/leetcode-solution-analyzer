@@ -13,7 +13,7 @@ export type SubmitSubmissionPayload = {
 };
 
 export async function submitSubmission(
-  payload: SubmitSubmissionPayload,
+  payload: SubmitSubmissionPayload
 ): Promise<SubmissionSuccessResponse> {
   const response = await fetch(`${API_BASE_URL}/api/submissions`, {
     method: "POST",

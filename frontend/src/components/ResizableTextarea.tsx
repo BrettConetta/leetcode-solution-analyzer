@@ -1,4 +1,9 @@
-import { useCallback, useRef, useState, type ComponentPropsWithoutRef } from "react";
+import {
+  useCallback,
+  useRef,
+  useState,
+  type ComponentPropsWithoutRef,
+} from "react";
 
 const MIN_HEIGHT = 120;
 const MAX_HEIGHT = 800;
@@ -25,27 +30,30 @@ export function ResizableTextarea({
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const startDrag = useCallback((event: React.MouseEvent) => {
-    event.preventDefault();
-    const startY = event.clientY;
-    const startHeight = containerRef.current?.offsetHeight ?? height;
+  const startDrag = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      const startY = event.clientY;
+      const startHeight = containerRef.current?.offsetHeight ?? height;
 
-    setIsDragging(true);
+      setIsDragging(true);
 
-    const onMove = (moveEvent: MouseEvent) => {
-      const nextHeight = startHeight + (moveEvent.clientY - startY);
-      setHeight(Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, nextHeight)));
-    };
+      const onMove = (moveEvent: MouseEvent) => {
+        const nextHeight = startHeight + (moveEvent.clientY - startY);
+        setHeight(Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, nextHeight)));
+      };
 
-    const onUp = () => {
-      setIsDragging(false);
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
+      const onUp = () => {
+        setIsDragging(false);
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
 
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-  }, [height]);
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    },
+    [height]
+  );
 
   return (
     <div

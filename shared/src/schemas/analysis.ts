@@ -22,4 +22,6 @@ export const SubmissionSuccessResponseSchema = z.object({
 
 export type ComplexityAnalysis = z.infer<typeof ComplexityAnalysisSchema>;
 export type AnalysisResult = z.infer<typeof AnalysisResultSchema>;
-export type SubmissionSuccessResponse = z.infer<typeof SubmissionSuccessResponseSchema>;
+export type SubmissionSuccessResponse = z.infer<
+  typeof SubmissionSuccessResponseSchema
+>;
