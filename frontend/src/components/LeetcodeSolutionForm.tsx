@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { CODE_LANGUAGES, formatLanguageLabel } from "../constants/codeLanguages";
+import {
+  CODE_LANGUAGES,
+  formatLanguageLabel,
+} from "@leetcode-solution-analyzer/shared/constants/codeLanguages";
 import { ResizableTextarea } from "./ResizableTextarea";
 
 type LeetcodeSolutionFormProps = {

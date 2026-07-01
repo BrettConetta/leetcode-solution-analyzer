@@ -10,6 +10,10 @@
         "./schemas/analysis": {
             "types": "./dist/schemas/analysis.d.ts",
             "import": "./dist/schemas/analysis.js"
+        },
+        "./constants/codeLanguages": {
+            "types": "./dist/constants/codeLanguages.d.ts",
+            "import": "./dist/constants/codeLanguages.js"
         }
     },
     "devDependencies": {

@@ -1,10 +1,10 @@
+import { CODE_LANGUAGES } from "@leetcode-solution-analyzer/shared/constants/codeLanguages";
 import { z } from "zod";
-import { CodeLanguage } from "../generated/client/enums.js";
 
 export const SubmissionSchema = z.object({
   userId: z.string().min(1, "Anonymous user session identifier missing"),
   problemId: z.number().int().positive("Invalid LeetCode problem identifier"),
-  codeLanguage: z.enum(CodeLanguage),
+  codeLanguage: z.enum(CODE_LANGUAGES),
   userCode: z.string().min(1, "Code content block cannot be empty"),
 });
 

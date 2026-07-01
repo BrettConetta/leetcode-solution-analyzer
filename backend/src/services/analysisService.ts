@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { CodeLanguage } from "../generated/client/enums.js";
+import type { CodeLanguage } from "@leetcode-solution-analyzer/shared/constants/codeLanguages";
 import { LeetCodeProblemData, stripHtml } from "./leetcodeService.js";
 import type { AnalysisResult } from "../schemas/analysisSchema.js";
 import { AnalysisResultSchema } from "../schemas/analysisSchema.js";
