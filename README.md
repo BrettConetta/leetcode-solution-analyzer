@@ -47,8 +47,10 @@ The submission pipeline:
 1. Validates input with Zod (`userId`, `problemId`, `codeLanguage`, `userCode`)
 2. Upserts an anonymous `User` record (UUID-based, no auth yet)
 3. Resolves LeetCode problem metadata via a read-through cache
-4. Returns a cached analysis if the same user has already submitted identical code for that problem
+4. Returns a cached analysis if an identical `(problemId, codeLanguage, userCode)` has been analyzed before (global dedup across users)
 5. Otherwise calls Claude via `analysisService`, then persists the submission and analysis atomically in a JSONB column
+
+The UI shows "Cached result" only when the current user resubmits that exact combination.
 
 ### Database (Prisma + PostgreSQL)
 
