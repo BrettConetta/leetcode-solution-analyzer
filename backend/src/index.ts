@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import pg from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "./generated/client/client.js";
-import { CodeLanguage } from "./generated/client/enums.js";
+import { CODE_LANGUAGES } from "@leetcode-solution-analyzer/shared/constants/codeLanguages";
 import { z } from "zod";
 import { fetchLeetCodeProblem } from "./services/leetcodeService.js";
 import { analyzeSubmission } from "./services/analysisService.js";
@@ -33,7 +33,7 @@ app.use(express.json());
 const SubmissionSchema = z.object({
   userId: z.string().min(1, "Anonymous user session identifier missing"),
   problemId: z.number().int().positive("Invalid LeetCode problem identifier"),
-  codeLanguage: z.enum(CodeLanguage),
+  codeLanguage: z.enum(CODE_LANGUAGES),
   userCode: z.string().min(1, "Code content block cannot be empty"),
 });
 

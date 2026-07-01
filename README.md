@@ -4,16 +4,27 @@ A full-stack TypeScript app that analyzes LeetCode solution submissions with AI 
 
 ## Status
 
-The backend is functional end-to-end for submission intake, LeetCode problem resolution, Claude-powered analysis, and cached analysis storage. The frontend is scaffolded but not yet wired to the API.
+Submit a problem ID, language, and solution in the UI (or via the API); the backend resolves the LeetCode problem, runs Claude-powered analysis, caches results, and returns structured feedback to the client.
 
 ## Structure
 
 | Directory   | Stack                                      | Status                                      |
 | ----------- | ------------------------------------------ | ------------------------------------------- |
 | `backend/`  | Node.js, Express, Prisma, PostgreSQL       | API, database, and LeetCode integration     |
-| `frontend/` | React 19, Vite, TypeScript, Tailwind CSS 4 | Placeholder UI only                         |
+| `frontend/` | React 19, Vite, TypeScript, Tailwind CSS 4 | Submission form and analysis results UI     |
+| `shared/`   | TypeScript, Zod                            | Shared schemas used by frontend and backend |
 
 ## What's implemented
+
+### Frontend
+
+- **Submission form** — LeetCode problem ID, language selector (all supported backend languages), and a resizable code textarea with client-side validation
+- **API integration** — `POST /api/submissions` via `frontend/src/api/submissions.ts`, with response validation against shared Zod schemas
+- **Anonymous sessions** — Client-generated UUID stored in `localStorage` (`leetcode-analyzer-user-id`) and sent as `userId` on each submission
+- **Results display** — Score summary, logic flaws, time/space complexity (actual vs optimal), and improvement suggestions; loading skeleton while analysis runs; cached-result indicator when the backend returns a prior analysis
+- **Error handling** — Form validation errors and API failure messages surfaced in the UI
+
+The dev server runs at `http://localhost:5173` (Vite default) and calls the backend at `http://localhost:3001`.
 
 ### Backend API
 
@@ -62,7 +73,7 @@ Supported languages: `python`, `python3`, `java`, `javascript`, `typescript`, `c
 
 ### AI analysis
 
-`backend/src/services/analysisService.ts` sends the problem statement and submission to Claude (Anthropic SDK), validates the response with `backend/src/schemas/analysisSchema.ts`, and retries once if JSON parsing fails.
+`backend/src/services/analysisService.ts` sends the problem statement and submission to Claude (Anthropic SDK), validates the response with `shared/src/schemas/analysis.ts`, and retries once if JSON parsing fails.
 
 Analysis response shape (`data` field):
 
@@ -85,10 +96,22 @@ Analysis response shape (`data` field):
 
 ## Development
 
+This repo is an npm workspaces monorepo. Install dependencies once from the repository root; the root `package-lock.json` is the single source of truth for dependency versions.
+
 ### Prerequisites
 
 - Node.js
 - PostgreSQL database (configured for Supabase-style pooled + direct URLs)
+
+### Setup
+
+From the repository root:
+
+```bash
+npm install
+```
+
+This installs all workspaces (`frontend`, `backend`, `shared`) and builds the shared package.
 
 ### Environment variables
 
@@ -102,24 +125,50 @@ ANTHROPIC_MODEL=claude-sonnet-4-6      # Optional; defaults to claude-sonnet-4-6
 PORT=3001                              # Optional; defaults to 3001
 ```
 
-### Backend
+### Running locally
+
+Start the backend and frontend in separate terminals. The frontend expects the API at `http://localhost:3001` (CORS is enabled on the backend).
+
+**Backend** — apply migrations once, then start the dev server:
 
 ```bash
 cd backend
-npm install
 npx prisma migrate deploy   # Apply migrations
 npm run dev                 # http://localhost:3001
 ```
 
-### Frontend
+From the repository root:
+
+```bash
+npm run dev -w leetcode-solution-analyzer-backend
+```
+
+**Frontend:**
 
 ```bash
 cd frontend
-npm install
-npm run dev
+npm run dev                 # http://localhost:5173
 ```
 
-### Example submission
+From the repository root:
+
+```bash
+npm run dev -w leetcode-solution-analyzer-frontend
+```
+
+Do not run `npm install` inside `frontend/` or `backend/`; use the root install so workspace dependencies (including `@leetcode-solution-analyzer/shared`) resolve correctly.
+
+### Build
+
+From the repository root:
+
+```bash
+npm run build
+```
+
+This builds `shared`, then `backend`, then `frontend`.
+
+### Example submission (curl)
 
 ```bash
 curl -X POST http://localhost:3001/api/submissions \
@@ -134,6 +183,7 @@ curl -X POST http://localhost:3001/api/submissions \
 
 ## Planned next steps
 
-- Wire up the React frontend (problem picker, code editor, results display)
+- Problem search / picker instead of manual problem ID entry
+- Configurable API base URL for frontend deployments
 - Prompt caching for analysis cost reduction
 - LeetCode failsafe if external problem fetching becomes unavailable
